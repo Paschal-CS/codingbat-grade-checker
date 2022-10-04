@@ -137,7 +137,7 @@ def processArchive(searchstring, csvfile) :
         print("First set of CodingBat scores have been read and stored in " + csvfile + " ... Exiting.")
 
 ################################################################################
-# the actual program -----------------------------------------------------------
+# items the user shouldn't edit ------------------------------------------------
 ################################################################################
 
 # Codingbat post fields
@@ -175,6 +175,10 @@ if readCreds :
     password = credsfile.readline().strip()
     credsfile.close()
 
+################################################################################
+# the actual program -----------------------------------------------------------
+################################################################################
+
 # make session
 session = requests.Session()
 
@@ -190,18 +194,15 @@ reportpage = session.get(fetch_url)
 # Parse the report page with BeautifulSoup
 soup = BeautifulSoup(reportpage.text, 'html.parser')
 
-# Load the CodingBat custom report page.
-customreportpage = session.get(custom_fetch_url)
-
-# Parse the custom report page with BeautifulSoup
-customsoup = BeautifulSoup(customreportpage.text, 'html.parser')
-
 # Write the report to a csv file
 writereport( soup, csvfile )
-if processCustom :
-    writereport( customsoup, custom_csvfile )
 
 # Find the relevant CSV files and process!
 processArchive(searchstring, csvfile) 
+
+# Last four steps for Custom Page if needed.
 if processCustom :
+    customreportpage = session.get(custom_fetch_url)    
+    customsoup = BeautifulSoup(customreportpage.text, 'html.parser')
+    writereport( customsoup, custom_csvfile )
     processArchive(custom_searchstring, custom_csvfile) 
