@@ -2,9 +2,8 @@ import csv
 import glob
 import os
 import sys
-from datetime import datetime
-
 import requests
+from datetime import datetime
 from bs4 import BeautifulSoup
 
 ################################################################################
@@ -87,6 +86,56 @@ def writereport( soup, csvfile ) :
                 # Write this student to a line of csv
                 writer.writerow(student)
 
+def filechanges( filelist ) :
+    # Get the most recent two csv files and extract their data.
+    fileold = getStudents( filelist[1] )
+    filenew = getStudents( filelist[0] )
+
+    print( "Generating changes since \"" + filelist[1] + "\"\n")
+
+    # This is O(n^2), but in any reasonable scenario a teacher with CodingBat students has few enough students
+    # that this process takes << 1 second on even modest hardware.
+    for student in sorted( filenew[1:] ) :
+        for student2 in sorted( fileold[1:] ) :
+            if student[1] == student2[1] :
+                # Matching student record from past and present found. 
+                # Loop through all sections. Print info if more problems have been completed.
+                printed = False
+                studentID = student[0] + " <" + student[1] + ">"
+                for i in range( len( student ) ) :
+                    if i > 1 :
+                        printedThis = False
+                        matchMe = filenew[0][i]
+                        newVal = int(student[i])
+                        for j in range( len( student2 ) ) :
+                            if matchMe == fileold[0][j] :
+                                oldVal = int(student2[j])
+                                if newVal > oldVal :
+                                    print( studentID + " has done " + str(newVal - oldVal) + " more problems in section " + filenew[0][i] + " -- total = " + str(newVal) )
+                                    printed = True
+                                    printedThis = True
+                                elif newVal == oldVal :
+                                    printedThis = True                            
+                        if printedThis == False and newVal > 0 :
+                            print( studentID + " has done " + str(newVal) + " more problems in section " + filenew[0][i] + " -- total = " + str(newVal) )
+                            printed = True
+                if printed :
+                    print()
+                elif printNone :
+                    print( studentID + " hasn't done any problems since the last score pull.\n")
+                break
+
+def processArchive(searchstring, csvfile) :
+    # Get the list of all codingbat csv files, sort by newest.
+    filelist = glob.glob( searchstring )
+    filelist.sort(reverse=True)
+
+    # Terminate if only one csv file has been created yet.
+    if len(filelist) > 1 :
+        filechanges(filelist)
+    else :
+        print("First set of CodingBat scores have been read and stored in " + csvfile + " ... Exiting.")
+
 ################################################################################
 # the actual program -----------------------------------------------------------
 ################################################################################
@@ -144,7 +193,7 @@ soup = BeautifulSoup(reportpage.text, 'html.parser')
 # Load the CodingBat custom report page.
 customreportpage = session.get(custom_fetch_url)
 
-# Parse the report page with BeautifulSoup
+# Parse the custom report page with BeautifulSoup
 customsoup = BeautifulSoup(customreportpage.text, 'html.parser')
 
 # Write the report to a csv file
@@ -152,50 +201,7 @@ writereport( soup, csvfile )
 if processCustom :
     writereport( customsoup, custom_csvfile )
 
-# Get the list of all codingbat csv files, sort by newest.
-filelist = glob.glob( searchstring )
-filelist.sort(reverse=True)
-
-# Terminate if only one csv file has been created yet.
-if len(filelist) < 2 :
-    print("First set of CodingBat scores have been read and stored in " + csvfile + " ... Exiting.")
-    sys.exit()
-
-# Get the most recent two csv files and extract their data.
-fileold = getStudents( filelist[1] )
-filenew = getStudents( filelist[0] )
-
-print( "Generating changes since \"" + filelist[1] + "\"\n")
-
-# This is O(n^2), but in any reasonable scenario a teacher with CodingBat students has few enough students
-# that this process takes << 1 second on even modest hardware.
-for student in sorted( filenew[1:] ) :
-    for student2 in sorted( fileold[1:] ) :
-        if student[1] == student2[1] :
-            # Matching student record from past and present found. 
-            # Loop through all sections. Print info if more problems have been completed.
-            printed = False
-            studentID = student[0] + " <" + student[1] + ">"
-            for i in range( len( student ) ) :
-                if i > 1 :
-                    printedThis = False
-                    matchMe = filenew[0][i]
-                    newVal = int(student[i])
-                    for j in range( len( student2 ) ) :
-                        if matchMe == fileold[0][j] :
-                            oldVal = int(student2[j])
-                            if newVal > oldVal :
-                                print( studentID + " has done " + str(newVal - oldVal) + " more problems in section " + filenew[0][i] + " -- total = " + str(newVal) )
-                                printed = True
-                                printedThis = True
-                            elif newVal == oldVal :
-                                printedThis = True                            
-                    if printedThis == False and newVal > 0 :
-                        print( studentID + " has done " + str(newVal) + " more problems in section " + filenew[0][i] + " -- total = " + str(newVal) )
-                        printed = True
-            if printed :
-                print()
-            elif printNone :
-                print( studentID + " hasn't done any problems since the last score pull.\n")
-            break
-            
+# Find the relevant CSV files and process!
+processArchive(searchstring, csvfile) 
+if processCustom :
+    processArchive(custom_searchstring, custom_csvfile) 
