@@ -52,8 +52,13 @@ printNone = True
 #   password on second line
 readCreds = True
 
+# TO DO
 # Should the program save a copy of the report in a text file?
-doReport = True
+# doReport = True
+
+# Should the program fetch results of custom problems?
+# These will be stored in a separate group of CSV files
+processCustom = True
 
 ################################################################################
 # helper functions   -----------------------------------------------------------
@@ -71,6 +76,42 @@ def getStudents( fileName ) :
             students.append(row)
     return students
 
+# writereport function. Given a CSV filename and the BeautifulSoup for a CodingBat page,
+# writes out the webpage data into the CSV file.
+def writereport( soup, csvfile ) :
+    with open( csvfile, 'w', newline='') as file:
+
+        writer = csv.writer(file)
+
+        # Section names - write them to the first line of the csv file.
+        # The first two and the last are manual names.
+        sections = []
+        sections.append('User ID')
+        sections.append('Memo')
+        sectionkeys = soup.find_all(attrs={"name": "sectionkey"})
+        for key in sectionkeys :
+            sections.append(key.attrs.get('value'))
+        sections.append('Total')
+        writer.writerow(sections)
+
+        # Find the Score data in the CodingBat structure.  
+        # Starts with the 6th <tr> tag.
+        trs = soup.find_all('tr')
+        for i, tableTR in enumerate(trs) :
+            if i >= 5 :
+                # Build the data for this student. All data in separate <td> tags.
+                # The first two tags are text.
+                # The rest of the tags are numeric (replace blank with zero)
+                student = []
+                tds = tableTR.find_all('td')
+                for j, tableTD in enumerate(tds) :
+                    if j <= 1 :
+                        student.append( str(tableTD.text) )
+                    else :
+                        student.append( int( float( str(tableTD.text).strip() or 0) ) )
+                # Write this student to a line of csv
+                writer.writerow(student)
+
 ################################################################################
 # the actual program -----------------------------------------------------------
 ################################################################################
@@ -82,6 +123,7 @@ passwdfield = 'pw'
 # Codingbat urls
 login_url = 'https://codingbat.com/login'
 fetch_url = 'https://codingbat.com/report'
+custom_fetch_url = 'https://codingbat.com/report?java=on&custom=on&homepath=&form='
 
 #today's date
 today = date.today().strftime("%Y-%m-%d")
@@ -92,12 +134,15 @@ suffix = '.csv'
 
 # filename
 csvfile = prefix + today + suffix
+custom_csvfile = 'custom_' + csvfile
 
 # report filename
 reportfile = prefix + 'report_' + today + '.txt'
+custom_reportfile = prefix + 'report_' + today + '_custom.txt'
 
 # filename search string for glob
 searchstring = os.getcwd() + os.path.sep + prefix + '*' + suffix
+custom_searchstring = os.getcwd() + os.path.sep + 'custom_' + prefix + '*' + suffix
 
 # read credentials, if needed
 if readCreds :
@@ -121,40 +166,16 @@ reportpage = session.get(fetch_url)
 # Parse the report page with BeautifulSoup
 soup = BeautifulSoup(reportpage.text, 'html.parser')
 
+# Load the CodingBat custom report page.
+customreportpage = session.get(custom_fetch_url)
+
+# Parse the report page with BeautifulSoup
+customsoup = BeautifulSoup(customreportpage.text, 'html.parser')
+
 # Write the report to a csv file
-with open( csvfile, 'w', newline='') as file:
-
-    writer = csv.writer(file)
-
-    # Section names - write them to the first line of the csv file.
-    # The first two and the last are manual names.
-    sections = []
-    sections.append('User ID')
-    sections.append('Memo')
-    sectionkeys = soup.find_all(attrs={"name": "sectionkey"})
-    for key in sectionkeys :
-        sections.append(key.attrs.get('value'))
-    sections.append('Total')
-    writer.writerow(sections)
-
-    # Find the Score data in the CodingBat structure.  
-    # Starts with the 6th <tr> tag.
-    trs = soup.find_all('tr')
-    for i, tableTR in enumerate(trs) :
-        if i >= 5 :
-            # Build the data for this student. All data in separate <td> tags.
-            # The first two tags are text.
-            # The rest of the tags are numeric (replace blank with zero)
-            student = []
-            tds = tableTR.find_all('td')
-            for j, tableTD in enumerate(tds) :
-                if j <= 1 :
-                    student.append( str(tableTD.text) )
-                else :
-                    student.append( int( float( str(tableTD.text).strip() or 0) ) )
-            # Write this student to a line of csv
-            writer.writerow(student)
-        
+writereport( soup, csvfile )
+if processCustom :
+    writereport( customsoup, custom_csvfile )
 
 # Get the list of all codingbat csv files, sort by newest.
 filelist = glob.glob( searchstring )
