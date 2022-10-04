@@ -2,7 +2,7 @@ import csv
 import glob
 import os
 import sys
-from datetime import date
+from datetime import datetime
 
 import requests
 from bs4 import BeautifulSoup
@@ -25,7 +25,7 @@ readCreds = True
 
 # Should the program print the names of students who haven't
 # finished any problems since the last grade pull?
-printNone = True
+printNone = False
 
 # TO DO
 # Should the program save a copy of the report in a text file?
@@ -101,7 +101,7 @@ fetch_url = 'https://codingbat.com/report'
 custom_fetch_url = 'https://codingbat.com/report?java=on&custom=on&homepath=&form='
 
 #today's date
-today = date.today().strftime("%Y-%m-%d")
+today = datetime.now().strftime("%Y-%m-%d:%H:%M:%S")
 
 # filename prefix and suffix
 prefix = 'codingbat_scores_'
