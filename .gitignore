@@ -1,2 +1,3 @@
 *.csv
 codingbat_scores_*.txt
+.vscode/

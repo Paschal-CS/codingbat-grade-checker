@@ -1,9 +1,8 @@
 import csv
 import glob
 import os
-import sys
-import requests
 from datetime import datetime
+import requests
 from bs4 import BeautifulSoup
 
 ################################################################################
@@ -20,11 +19,11 @@ password = 'password'
 # The file should consist of two lines:
 #   username on first line
 #   password on second line
-readCreds = True
+READCREDS = True
 
 # Should the program print the names of students who haven't
 # finished any problems since the last grade pull?
-printNone = False
+PRINTNONE = False
 
 # TO DO
 # Should the program save a copy of the report in a text file?
@@ -32,7 +31,7 @@ printNone = False
 
 # Should the program fetch results of custom problems?
 # These will be stored in a separate group of CSV files
-processCustom = True
+PROCESSCUSTOM = True
 
 ################################################################################
 # helper functions   -----------------------------------------------------------
@@ -41,8 +40,8 @@ processCustom = True
 # getStudents function.  Reads a given csv file and returns a 2D list of the file's data.
 def getStudents( fileName ) :
     students = []
-    with open(fileName, newline='') as csvfile:
-        reader = csv.reader(csvfile)
+    with open(fileName, newline='', encoding='utf-8') as myfile:
+        reader = csv.reader(myfile)
         for row in reader :
             temp = row[0]
             row[0] = row[1]
@@ -52,8 +51,8 @@ def getStudents( fileName ) :
 
 # writereport function. Given a CSV filename and the BeautifulSoup for a CodingBat page,
 # writes out the webpage data into the CSV file.
-def writereport( soup, csvfile ) :
-    with open( csvfile, 'w', newline='') as file:
+def writereport( soupy, myfile ) :
+    with open( myfile, 'w', newline='', encoding='utf-8') as file:
 
         writer = csv.writer(file)
 
@@ -62,29 +61,28 @@ def writereport( soup, csvfile ) :
         sections = []
         sections.append('User ID')
         sections.append('Memo')
-        sectionkeys = soup.find_all(attrs={"name": "sectionkey"})
+        sectionkeys = soupy.find_all(attrs={"name": "sectionkey"})
         for key in sectionkeys :
             sections.append(key.attrs.get('value'))
         sections.append('Total')
         writer.writerow(sections)
 
-        # Find the Score data in the CodingBat structure.  
+        # Find the Score data in the CodingBat structure.
         # Starts with the 6th <tr> tag.
-        trs = soup.find_all('tr')
-        for i, tableTR in enumerate(trs) :
-            if i >= 5 :
-                # Build the data for this student. All data in separate <td> tags.
-                # The first two tags are text.
-                # The rest of the tags are numeric (replace blank with zero)
-                student = []
-                tds = tableTR.find_all('td')
-                for j, tableTD in enumerate(tds) :
-                    if j <= 1 :
-                        student.append( str(tableTD.text) )
-                    else :
-                        student.append( int( float( str(tableTD.text).strip() or 0) ) )
-                # Write this student to a line of csv
-                writer.writerow(student)
+        trs = soupy.find_all('tr')
+        for tableTR in trs[5:] :
+            # Build the data for this student. All data in separate <td> tags.
+            # The first two tags are text.
+            # The rest of the tags are numeric (replace blank with zero)
+            student = []
+            tds = tableTR.find_all('td')
+            for j, tableTD in enumerate(tds) :
+                if j <= 1 :
+                    student.append( str(tableTD.text) )
+                else :
+                    student.append( int( float( str(tableTD.text).strip() or 0) ) )
+            # Write this student to a line of csv
+            writer.writerow(student)
 
 def filechanges( filelist ) :
     # Get the most recent two csv files and extract their data.
@@ -93,48 +91,49 @@ def filechanges( filelist ) :
 
     print( "Generating changes since \"" + filelist[1] + "\"\n")
 
-    # This is O(n^2), but in any reasonable scenario a teacher with CodingBat students has few enough students
+    # This is O(n^2), but in any reasonable scenario a teacher with
+    # CodingBat students has few enough students
     # that this process takes << 1 second on even modest hardware.
     for student in sorted( filenew[1:] ) :
         for student2 in sorted( fileold[1:] ) :
             if student[1] == student2[1] :
-                # Matching student record from past and present found. 
+                # Matching student record from past and present found.
                 # Loop through all sections. Print info if more problems have been completed.
                 printed = False
                 studentID = student[0] + " <" + student[1] + ">"
-                for i in range( len( student ) ) :
-                    if i > 1 :
-                        printedThis = False
-                        matchMe = filenew[0][i]
-                        newVal = int(student[i])
-                        for j in range( len( student2 ) ) :
-                            if matchMe == fileold[0][j] :
-                                oldVal = int(student2[j])
-                                if newVal > oldVal :
-                                    print( studentID + " has done " + str(newVal - oldVal) + " more problems in section " + filenew[0][i] + " -- total = " + str(newVal) )
-                                    printed = True
-                                    printedThis = True
-                                elif newVal == oldVal :
-                                    printedThis = True                            
-                        if printedThis == False and newVal > 0 :
-                            print( studentID + " has done " + str(newVal) + " more problems in section " + filenew[0][i] + " -- total = " + str(newVal) )
-                            printed = True
+                # starting at index 2 because the first two are name and email.
+                for i in range( 2, len( student ) ) :
+                    printedThis = False
+                    matchMe = filenew[0][i]
+                    newVal = int(student[i])
+                    for j in range( 2, len( student2 ) ) :
+                        if matchMe == fileold[0][j] :
+                            oldVal = int(student2[j])
+                            if newVal > oldVal :
+                                print( studentID + " has done " + str(newVal - oldVal) + " more problems in section " + filenew[0][i] + " -- total = " + str(newVal) )
+                                printed = True
+                                printedThis = True
+                            elif newVal == oldVal :
+                                printedThis = True
+                    if printedThis is False and newVal > 0 :
+                        print( studentID + " has done " + str(newVal) + " more problems in section " + filenew[0][i] + " -- total = " + str(newVal) )
+                        printed = True
                 if printed :
                     print()
-                elif printNone :
+                elif PRINTNONE :
                     print( studentID + " hasn't done any problems since the last score pull.\n")
                 break
 
-def processArchive(searchstring, csvfile) :
+def processArchive( findstring, myfile ) :
     # Get the list of all codingbat csv files, sort by newest.
-    filelist = glob.glob( searchstring )
+    filelist = glob.glob( findstring )
     filelist.sort(reverse=True)
 
     # Terminate if only one csv file has been created yet.
     if len(filelist) > 1 :
         filechanges(filelist)
     else :
-        print("First set of CodingBat scores have been read and stored in " + csvfile + " ... Exiting.")
+        print("First set of CodingBat scores have been read and stored in " + myfile + ".")
 
 ################################################################################
 # items the user shouldn't edit ------------------------------------------------
@@ -169,8 +168,8 @@ searchstring = os.getcwd() + os.path.sep + prefix + '*' + suffix
 custom_searchstring = os.getcwd() + os.path.sep + 'custom_' + prefix + '*' + suffix
 
 # read credentials, if needed
-if readCreds :
-    credsfile = open("codingbat_auth.txt", "r")
+if READCREDS :
+    credsfile = open("codingbat_auth.txt", "r", encoding='utf-8')
     username = credsfile.readline().strip()
     password = credsfile.readline().strip()
     credsfile.close()
@@ -198,11 +197,11 @@ soup = BeautifulSoup(reportpage.text, 'html.parser')
 writereport( soup, csvfile )
 
 # Find the relevant CSV files and process!
-processArchive(searchstring, csvfile) 
+processArchive(searchstring, csvfile)
 
 # Last four steps for Custom Page if needed.
-if processCustom :
-    customreportpage = session.get(custom_fetch_url)    
+if PROCESSCUSTOM :
+    customreportpage = session.get(custom_fetch_url)
     customsoup = BeautifulSoup(customreportpage.text, 'html.parser')
     writereport( customsoup, custom_csvfile )
-    processArchive(custom_searchstring, custom_csvfile) 
+    processArchive(custom_searchstring, custom_csvfile)
