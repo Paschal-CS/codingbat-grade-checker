@@ -1,3 +1,9 @@
+"""A program that automatically fetches student data from CodingBat
+
+The program will also compare the most recent data pull to the most recent
+previous one (if one exists) and give reporting about student progress
+in the interim
+"""
 import csv
 import glob
 import os
@@ -37,8 +43,8 @@ PROCESSCUSTOM = True
 # helper functions   -----------------------------------------------------------
 ################################################################################
 
-# getStudents function.  Reads a given csv file and returns a 2D list of the file's data.
 def get_students( file_name ) :
+    """Reads a given csv file and returns a 2D list of the file's data."""
     students = []
     with open(file_name, newline='', encoding='utf-8') as myfile:
         reader = csv.reader(myfile)
@@ -49,9 +55,8 @@ def get_students( file_name ) :
             students.append(row)
     return students
 
-# writereport function. Given a CSV filename and the BeautifulSoup for a CodingBat page,
-# writes out the webpage data into the CSV file.
 def writereport( soupy, myfile ) :
+    """Given the bs of a page and a CSV filename, writes the webpage data into the CSV file."""
     with open( myfile, 'w', newline='', encoding='utf-8') as file:
 
         writer = csv.writer(file)
@@ -84,7 +89,8 @@ def writereport( soupy, myfile ) :
             # Write this student to a line of csv
             writer.writerow(student)
 
-def filechanges( filelist ) :
+def file_changes( filelist ) :
+    """Given a sorted list of CSV student data files, examine changes between them."""
     # Get the most recent two csv files and extract their data.
     fileold = get_students( filelist[1] )
     filenew = get_students( filelist[0] )
@@ -125,13 +131,14 @@ def filechanges( filelist ) :
                 break
 
 def process_archive( findstring, myfile ) :
+    """Given a glob string and a filename, generate a list of files for file_changes() and report"""
     # Get the list of all codingbat csv files, sort by newest.
     filelist = glob.glob( findstring )
     filelist.sort(reverse=True)
 
     # Terminate if only one csv file has been created yet.
     if len(filelist) > 1 :
-        filechanges(filelist)
+        file_changes(filelist)
     else :
         print("First set of CodingBat scores have been read and stored in " + myfile + ".")
 
@@ -188,10 +195,10 @@ credentials = {USERFIELD:USERNAME, PASSWDFIELD:PASSWORD}
 session.post(LOGIN_URL, data=credentials)
 
 # Load the CodingBat report page.
-reportpage = session.get(FETCH_URL)
+report_page = session.get(FETCH_URL)
 
 # Parse the report page with BeautifulSoup
-soup = BeautifulSoup(reportpage.text, 'html.parser')
+soup = BeautifulSoup(report_page.text, 'html.parser')
 
 # Write the report to a csv file
 writereport( soup, csvfile )
@@ -201,7 +208,7 @@ process_archive(searchstring, csvfile)
 
 # Last four steps for Custom Page if needed.
 if PROCESSCUSTOM :
-    customreportpage = session.get(CUSTOM_FETCH_URL)
-    customsoup = BeautifulSoup(customreportpage.text, 'html.parser')
+    custom_report_page = session.get(CUSTOM_FETCH_URL)
+    customsoup = BeautifulSoup(custom_report_page.text, 'html.parser')
     writereport( customsoup, custom_csvfile )
     process_archive(custom_searchstring, custom_csvfile)
