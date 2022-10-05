@@ -116,19 +116,26 @@ def file_changes( filelist ) :
                         if match_me == fileold[0][j] :
                             old_val = int(student2[j])
                             if new_val > old_val :
-                                print( student_id + " has done " + str(new_val - old_val) + " more problems in section " + filenew[0][i] + " -- total = " + str(new_val) )
+                                print_report(student_id, new_val, old_val, filenew[0][i])
                                 printed = True
                                 printed_this = True
                             elif new_val == old_val :
                                 printed_this = True
                     if printed_this is False and new_val > 0 :
-                        print( student_id + " has done " + str(new_val) + " more problems in section " + filenew[0][i] + " -- total = " + str(new_val) )
+                        print_report(student_id, new_val, 0, filenew[0][i])
                         printed = True
                 if printed :
                     print()
                 elif PRINTNONE :
                     print( student_id + " hasn't done any problems since the last score pull.\n")
                 break
+
+def print_report( sid, new_val, old_val, section ) :
+    """print student progress line"""
+    report = sid + " has done " + str(new_val - old_val) \
+        + " more problems in section " + section \
+        + " -- total = " + str(new_val)
+    print( report )
 
 def process_archive( findstring, myfile ) :
     """Given a glob string and a filename, generate a list of files for file_changes() and report"""
