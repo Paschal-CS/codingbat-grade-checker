@@ -11,8 +11,8 @@ from bs4 import BeautifulSoup
 
 # Login Credentials
 # See next variable for credentials file option.
-username = 'username'
-password = 'password'
+USERNAME = 'username'
+PASSWORD = 'password'
 
 # Should the program read the credentials from codingbat_auth.txt
 # instead of using the above values?
@@ -38,9 +38,9 @@ PROCESSCUSTOM = True
 ################################################################################
 
 # getStudents function.  Reads a given csv file and returns a 2D list of the file's data.
-def getStudents( fileName ) :
+def get_students( file_name ) :
     students = []
-    with open(fileName, newline='', encoding='utf-8') as myfile:
+    with open(file_name, newline='', encoding='utf-8') as myfile:
         reader = csv.reader(myfile)
         for row in reader :
             temp = row[0]
@@ -70,24 +70,24 @@ def writereport( soupy, myfile ) :
         # Find the Score data in the CodingBat structure.
         # Starts with the 6th <tr> tag.
         trs = soupy.find_all('tr')
-        for tableTR in trs[5:] :
+        for table_tr in trs[5:] :
             # Build the data for this student. All data in separate <td> tags.
             # The first two tags are text.
             # The rest of the tags are numeric (replace blank with zero)
             student = []
-            tds = tableTR.find_all('td')
-            for j, tableTD in enumerate(tds) :
+            tds = table_tr.find_all('td')
+            for j, table_td in enumerate(tds) :
                 if j <= 1 :
-                    student.append( str(tableTD.text) )
+                    student.append( str(table_td.text) )
                 else :
-                    student.append( int( float( str(tableTD.text).strip() or 0) ) )
+                    student.append( int( float( str(table_td.text).strip() or 0) ) )
             # Write this student to a line of csv
             writer.writerow(student)
 
 def filechanges( filelist ) :
     # Get the most recent two csv files and extract their data.
-    fileold = getStudents( filelist[1] )
-    filenew = getStudents( filelist[0] )
+    fileold = get_students( filelist[1] )
+    filenew = get_students( filelist[0] )
 
     print( "Generating changes since \"" + filelist[1] + "\"\n")
 
@@ -100,31 +100,31 @@ def filechanges( filelist ) :
                 # Matching student record from past and present found.
                 # Loop through all sections. Print info if more problems have been completed.
                 printed = False
-                studentID = student[0] + " <" + student[1] + ">"
+                student_id = student[0] + " <" + student[1] + ">"
                 # starting at index 2 because the first two are name and email.
                 for i in range( 2, len( student ) ) :
-                    printedThis = False
-                    matchMe = filenew[0][i]
-                    newVal = int(student[i])
+                    printed_this = False
+                    match_me = filenew[0][i]
+                    new_val = int(student[i])
                     for j in range( 2, len( student2 ) ) :
-                        if matchMe == fileold[0][j] :
-                            oldVal = int(student2[j])
-                            if newVal > oldVal :
-                                print( studentID + " has done " + str(newVal - oldVal) + " more problems in section " + filenew[0][i] + " -- total = " + str(newVal) )
+                        if match_me == fileold[0][j] :
+                            old_val = int(student2[j])
+                            if new_val > old_val :
+                                print( student_id + " has done " + str(new_val - old_val) + " more problems in section " + filenew[0][i] + " -- total = " + str(new_val) )
                                 printed = True
-                                printedThis = True
-                            elif newVal == oldVal :
-                                printedThis = True
-                    if printedThis is False and newVal > 0 :
-                        print( studentID + " has done " + str(newVal) + " more problems in section " + filenew[0][i] + " -- total = " + str(newVal) )
+                                printed_this = True
+                            elif new_val == old_val :
+                                printed_this = True
+                    if printed_this is False and new_val > 0 :
+                        print( student_id + " has done " + str(new_val) + " more problems in section " + filenew[0][i] + " -- total = " + str(new_val) )
                         printed = True
                 if printed :
                     print()
                 elif PRINTNONE :
-                    print( studentID + " hasn't done any problems since the last score pull.\n")
+                    print( student_id + " hasn't done any problems since the last score pull.\n")
                 break
 
-def processArchive( findstring, myfile ) :
+def process_archive( findstring, myfile ) :
     # Get the list of all codingbat csv files, sort by newest.
     filelist = glob.glob( findstring )
     filelist.sort(reverse=True)
@@ -140,38 +140,38 @@ def processArchive( findstring, myfile ) :
 ################################################################################
 
 # Codingbat post fields
-userfield = 'uname'
-passwdfield = 'pw'
+USERFIELD = 'uname'
+PASSWDFIELD = 'pw'
 
 # Codingbat urls
-login_url = 'https://codingbat.com/login'
-fetch_url = 'https://codingbat.com/report'
-custom_fetch_url = 'https://codingbat.com/report?java=on&custom=on&homepath=&form='
+LOGIN_URL = 'https://codingbat.com/login'
+FETCH_URL = 'https://codingbat.com/report'
+CUSTOM_FETCH_URL = 'https://codingbat.com/report?java=on&custom=on&homepath=&form='
 
 #today's date
 today = datetime.now().strftime("%Y-%m-%d:%H:%M:%S")
 
 # filename prefix and suffix
-prefix = 'codingbat_scores_'
-suffix = '.csv'
+PREFIX = 'codingbat_scores_'
+SUFFIX = '.csv'
 
 # filename
-csvfile = prefix + today + suffix
+csvfile = PREFIX + today + SUFFIX
 custom_csvfile = 'custom_' + csvfile
 
 # report filename
-reportfile = prefix + 'report_' + today + '.txt'
-custom_reportfile = prefix + 'report_' + today + '_custom.txt'
+reportfile = PREFIX + 'report_' + today + '.txt'
+custom_reportfile = PREFIX + 'report_' + today + '_custom.txt'
 
 # filename search string for glob
-searchstring = os.getcwd() + os.path.sep + prefix + '*' + suffix
-custom_searchstring = os.getcwd() + os.path.sep + 'custom_' + prefix + '*' + suffix
+searchstring = os.getcwd() + os.path.sep + PREFIX + '*' + SUFFIX
+custom_searchstring = os.getcwd() + os.path.sep + 'custom_' + PREFIX + '*' + SUFFIX
 
 # read credentials, if needed
 if READCREDS :
     credsfile = open("codingbat_auth.txt", "r", encoding='utf-8')
-    username = credsfile.readline().strip()
-    password = credsfile.readline().strip()
+    USERNAME = credsfile.readline().strip()
+    PASSWORD = credsfile.readline().strip()
     credsfile.close()
 
 ################################################################################
@@ -182,13 +182,13 @@ if READCREDS :
 session = requests.Session()
 
 # Credentials
-credentials = {userfield:username, passwdfield:password}
+credentials = {USERFIELD:USERNAME, PASSWDFIELD:PASSWORD}
 
 # Post credentials
-session.post(login_url, data=credentials)
+session.post(LOGIN_URL, data=credentials)
 
 # Load the CodingBat report page.
-reportpage = session.get(fetch_url)
+reportpage = session.get(FETCH_URL)
 
 # Parse the report page with BeautifulSoup
 soup = BeautifulSoup(reportpage.text, 'html.parser')
@@ -197,11 +197,11 @@ soup = BeautifulSoup(reportpage.text, 'html.parser')
 writereport( soup, csvfile )
 
 # Find the relevant CSV files and process!
-processArchive(searchstring, csvfile)
+process_archive(searchstring, csvfile)
 
 # Last four steps for Custom Page if needed.
 if PROCESSCUSTOM :
-    customreportpage = session.get(custom_fetch_url)
+    customreportpage = session.get(CUSTOM_FETCH_URL)
     customsoup = BeautifulSoup(customreportpage.text, 'html.parser')
     writereport( customsoup, custom_csvfile )
-    processArchive(custom_searchstring, custom_csvfile)
+    process_archive(custom_searchstring, custom_csvfile)
